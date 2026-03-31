@@ -74,18 +74,16 @@ All images are **224×224 pixels**.
 ## 📁 Project Structure
 
 brain-tumor-mri-classification/
-├── README.md
-├── Brain_Tumor_Classification.ipynb
-├── requirements.txt
-├── models/
-│   └── simple_cnn.pth                  # optional
+├── notebooks/
+│   └── Brain_Tumor_Classification.ipynb     # Main notebook
 ├── src/
 │   ├── dataset.py
 │   ├── models.py
 │   └── utils.py
-└── data/                               # not included - download from Kaggle
-
-
+├── requirements.txt
+├── .gitignore
+├── LICENSE
+└── README.md
 
 
 ---
