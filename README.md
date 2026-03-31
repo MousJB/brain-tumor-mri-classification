@@ -72,3 +72,34 @@ All images are **224×224 pixels**.
 ---
 
 ## 📁 Project Structure
+
+brain-tumor-mri-classification/
+├── README.md
+├── Brain_Tumor_Classification.ipynb
+├── requirements.txt
+├── models/
+│   └── simple_cnn.pth                  # optional
+├── src/
+│   ├── dataset.py
+│   ├── models.py
+│   └── utils.py
+└── data/                               # not included - download from Kaggle
+
+
+
+
+---
+
+## 🧪 How to Reproduce
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/brain-tumor-mri-classification.git
+   cd brain-tumor-mri-classification
+
+2.Install dependencies
+pip install -r requirements.txt
+
+3.Download the dataset from Kaggle and place the Training/ and Testing/ folders inside a data/ directory.
+4.Open Brain_Tumor_Classification.ipynb in Google Colab or Jupyter Notebook.
+
