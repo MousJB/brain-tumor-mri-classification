@@ -103,3 +103,19 @@ pip install -r requirements.txt
 3.Download the dataset from Kaggle and place the Training/ and Testing/ folders inside a data/ directory.
 4.Open Brain_Tumor_Classification.ipynb in Google Colab or Jupyter Notebook.
 
+
+
+🎯 Project Objectives
+
+Explore medical image classification with Deep Learning
+Study the impact of data augmentation
+Test model robustness on degraded images (blur, noise, motion artifacts)
+Compare custom CNN vs Transfer Learning (ResNet18)
+
+
+📌 Future Improvements
+
+ Implement EfficientNet or Vision Transformers
+ Add Grad-CAM for explainability
+ k-fold cross-validation
+ Model deployment with Gradio or Streamlit
