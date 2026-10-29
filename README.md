@@ -1,5 +1,7 @@
 # Brain Tumor Classification from MRI Images using Deep Learning
 
+[日本語](README.ja.md)
+
 This project explores different deep learning approaches for **brain tumor classification** from MRI scans using Python and PyTorch.
 
 The goal is to classify MRI images into **4 classes**:
