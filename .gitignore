@@ -73,6 +73,8 @@ Thumbs.db
 logs/
 *.log
 
-# Data folders (large files)
-data/
+# Data, weights and outputs (large files)
+data/*
+!data/README.md
 models/
+results/

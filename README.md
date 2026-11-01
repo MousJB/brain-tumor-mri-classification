@@ -1,169 +1,134 @@
-# Brain Tumor Classification from MRI Images using Deep Learning
+# Brain Tumor Classification from MRI (PyTorch)
 
 [日本語](README.ja.md)
 
-This project explores different deep learning approaches for **brain tumor classification** from MRI scans using Python and PyTorch.
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-The goal is to classify MRI images into **4 classes**:
-- Glioma
-- Meningioma
-- Pituitary
-- No-tumor
+Classification of brain MRI slices into **4 classes** (glioma, meningioma, pituitary
+tumor, no tumor), comparing three approaches:
+
+1. a **custom CNN** trained from scratch,
+2. the same CNN trained with **degradation-style augmentation** (blur, noise, motion blur),
+   then tested on blurred, noisy and motion-artifact versions of the images,
+3. **ResNet18 transfer learning** (frozen ImageNet backbone, new classification head).
 
 > [!WARNING]
-> **Data leakage found after publication (audit of October 2026).**
-> **216 of the 1,311 Testing images (16.5%) are byte-identical copies of Training images**
-> (meningioma 106, no-tumor 105, pituitary 5). The Training/Testing split of this dataset is
-> therefore not independent, and **the accuracies reported below are likely optimistic**.
-> The size of that bias has not been measured. See [Data audit](#-data-audit-october-2026).
+> **The Training/Testing split of this dataset leaks.** An audit done after publication
+> found that **216 of the 1,311 Testing images (16.5%) are byte-identical copies of
+> Training images**. The accuracies below are therefore likely optimistic and should not
+> be read as performance on unseen patients. Details: [docs/data_audit.md](docs/data_audit.md).
+
+> This is a learning project, not a medical device.
 
 ---
 
-## 📊 Dataset
+## Dataset
 
-**MRI Brain Tumor Dataset: 4-Class (7,023 Images)**  
-Link: [Kaggle Dataset](https://www.kaggle.com/datasets/mohamadabouali1/mri-brain-tumor-dataset-4-class-7023-images)
+[MRI Brain Tumor Dataset: 4-Class (7,023 Images)](https://www.kaggle.com/datasets/mohamadabouali1/mri-brain-tumor-dataset-4-class-7023-images) (Kaggle)
 
-- **Training set**: 5,712 images
-- **Testing set**: Standard test images + 3 challenging datasets (Blurred, Noisy, Patient Motion Artifact)
-
-**Class Distribution (Training):**
-- No-tumor: 1,595 images
-- Pituitary: 1,457 images
-- Meningioma: 1,339 images
-- Glioma: 1,321 images
-
-All images are **224×224 pixels**.
-
----
-
-## 🛠️ Technologies Used
-
-- Python
-- PyTorch + Torchvision
-- OpenCV
-- scikit-learn
-- Matplotlib & Seaborn
-- Google Colab
-
----
-
-## 🚀 Models Implemented
-
-### 1. SimpleCNN (Custom CNN from scratch)
-- 3 convolutional blocks with Batch Normalization and Dropout
-- Trained for 12 epochs
-- Best validation accuracy: **~94.58%**
-
-### 2. Fine-Tuning with Data Augmentation
-- Added robust augmentations (Gaussian Blur, Gaussian Noise)
-- Tested robustness on degraded datasets:
-  - **Blurred Dataset**: **98.33%** accuracy
-  - **Noisy Dataset**: **80.38%** accuracy
-  - **Motion Artifact Dataset**: **93.92%** accuracy
-
-### 3. Transfer Learning - ResNet18
-- Pre-trained ResNet18 on ImageNet
-- Only the final fully connected layer was trained (feature extraction)
-- Enhanced augmentations including **random Motion Blur**
-- Trained for 50 epochs
-
----
-
-## 📈 Results Summary
-
-| Model                    | Validation Accuracy | Blurred Acc | Noisy Acc | Motion Acc |
-|--------------------------|---------------------|-------------|-----------|------------|
-| SimpleCNN                | 94.58%             | -           | -         | -          |
-| Fine-tuned SimpleCNN     | 98.09% (best)      | 98.33%      | 80.38%    | 93.92%     |
-| ResNet18 (Transfer)      | Strong convergence | -           | -         | -          |
-
-**How to read these numbers.** They were measured on the dataset's Training/Testing split,
-which shares 216 identical images (see the audit below), so they should not be taken as
-an estimate of performance on unseen patients. They are also **not reproducible from this
-repository**: the notebook that produced them was not saved (the committed notebook is
-empty), no model weights are versioned, and the origin of the "validation" set is not
-documented. The Blurred, Noisy and Motion sets are synthetic degradations of the same
-images: they are sensitivity tests, not real acquisition conditions.
-
----
-
-## 🔍 Data audit (October 2026)
-
-The dataset was audited with the duplicate-detection module of
-[MedVision QA](https://github.com/MousJB/medvision-qa) (script `experiments/brain_mri/audit_mri_bt.py`,
-results in `experiments/brain_mri/mri_bt_audit/`). Scope: the original Training (5,712) and
-Testing (1,311) sets; the "Challenging" sets are excluded.
-
-| Finding | Value |
+| Split | Images |
 |---|---|
-| Testing images with a byte-identical copy in Training | **216 / 1,311 (16.5%)** |
-| Identical duplicates with conflicting labels | 0 |
-| Near-duplicates (perceptual hash, distance ≤ 4) with different labels | 50; the 24 inspected are all different images (false positives) |
-| Images close to an image of the public figshare dataset (Cheng et al.) | 1,704 |
+| Training | 5,712 (no-tumor 1,595 · pituitary 1,457 · meningioma 1,339 · glioma 1,321) |
+| Testing | 1,311 + 3 "challenging" sets: Blurred, Noisy, Patient Motion Artifact |
 
-**What this shows.** A sixth of the test set was already seen during training, so any
-evaluation on this split is partly an evaluation on training data.
+Images are 224×224, read as grayscale. The challenging sets are synthetic degradations
+of the same images: they measure sensitivity to degradation, not performance under
+real acquisition conditions.
 
-**What this does not show.** An identical file proves an identical image, not an identical
-patient. The dataset has no patient identifier, so it is impossible to check whether other
-slices of the same patients are spread across Training and Testing; the real overlap may
-be larger. The match with figshare is consistent with the dataset including figshare
-images, but does not prove it.
+## Method
 
-**What a fair evaluation needs.** A patient-level split. MedVision QA does this on the
-figshare dataset (which has patient IDs): 64 held-out test patients, acceptance criteria
-fixed before training, bootstrap confidence intervals per patient. A ResNet18 retrained
-there reached a macro-F1 of 0.923 [0.867; 0.964]. It is a different model on a different
-task (3 classes, no "no-tumor"), so this number is not directly comparable with the table
-above.
+**Preprocessing** ([src/dataset.py](src/dataset.py)): grayscale → clipping to the
+1st–99th percentile → z-score normalization on non-zero (brain) pixels.
 
----
+**Augmentation** (optional, each with probability 0.5): Gaussian blur 5×5,
+Gaussian noise (σ = 5), horizontal motion blur (kernel 3, 5 or 7).
 
-## 📁 Project Structure
+**Models** ([src/models.py](src/models.py)):
 
+| Model | Architecture | Trained parameters |
+|---|---|---|
+| SimpleCNN | 3 × (Conv 3×3 → BatchNorm → ReLU → MaxPool), FC 256, Dropout 0.5 | all |
+| ResNet18 | ImageNet-pretrained, grayscale repeated to 3 channels | final FC layer only |
+
+## Results
+
+Measured in the original Google Colab notebook:
+
+| Model | Validation acc. | Blurred | Noisy | Motion |
+|---|---|---|---|---|
+| SimpleCNN (12 epochs) | 94.58% | – | – | – |
+| SimpleCNN + augmentation | **98.09%** | 98.33% | 80.38% | 93.92% |
+| ResNet18, transfer (50 epochs) | not recorded | – | – | – |
+
+Limits of these numbers:
+
+- **Leak**: the Testing set shares 216 identical images with Training (see the warning above).
+- **Not reproducible as-is**: the original notebook and weights were not saved, and the
+  exact origin of the validation set was not documented. The scripts in this repository
+  re-implement the pipeline from the saved modules, but have not yet been re-run to
+  confirm these figures.
+- **Image-level split**: the dataset has no patient IDs, so slices of one patient can sit
+  on both sides of any split.
+
+Among the degraded sets, Noisy is clearly the hardest (80.38%, against 93–98% for the others).
+
+## Project structure
+
+```
 brain-tumor-mri-classification/
-├── notebooks/
-│   └── Brain_Tumor_Classification.ipynb     # Main notebook
 ├── src/
-│   ├── dataset.py
-│   ├── models.py
-│   └── utils.py
+│   ├── dataset.py        # Dataset class, preprocessing, augmentation
+│   ├── models.py         # SimpleCNN, ResNet18 (transfer learning)
+│   └── utils.py          # evaluation, confusion matrix, seeding
+├── train.py              # training + validation split + checkpointing
+├── evaluate.py           # accuracy and confusion matrix on test folders
+├── data/                 # dataset goes here (not versioned, see data/README.md)
+├── docs/
+│   └── data_audit.md     # Training/Testing leak audit
 ├── requirements.txt
-├── .gitignore
 ├── LICENSE
-└── README.md
+├── README.md
+└── README.ja.md
+```
 
+`models/` (weights) and `results/` (metrics, figures) are created by the scripts and
+ignored by git.
 
----
+## Usage
 
-## 🧪 How to Reproduce
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/MousJB/brain-tumor-mri-classification.git
-   cd brain-tumor-mri-classification
-
-2.Install dependencies
+```bash
+git clone https://github.com/MousJB/brain-tumor-mri-classification.git
+cd brain-tumor-mri-classification
 pip install -r requirements.txt
+```
 
-3.Download the dataset from Kaggle and place the Training/ and Testing/ folders inside a data/ directory.
-4.Open Brain_Tumor_Classification.ipynb in Google Colab or Jupyter Notebook.
+Download the dataset into `data/` (layout in [data/README.md](data/README.md)), then:
 
+```bash
+# Custom CNN, with augmentation
+python train.py --model simplecnn --epochs 12 --augment
 
+# ResNet18 transfer learning
+python train.py --model resnet18 --epochs 50 --augment
 
-🎯 Project Objectives
+# Evaluation on the test set and the degraded sets
+python evaluate.py --weights models/simplecnn.pth \
+    --test-dirs data/Testing data/Blurred data/Noisy data/Motion
+```
 
-Explore medical image classification with Deep Learning
-Study the impact of data augmentation
-Test model robustness on degraded images (blur, noise, motion artifacts)
-Compare custom CNN vs Transfer Learning (ResNet18)
+`train.py` holds out a stratified 15% of Training for validation (`--val-split`) and
+keeps the best checkpoint on validation accuracy. `python train.py -h` lists all options.
 
+## Future work
 
-📌 Future Improvements
+- [ ] Re-evaluate on a deduplicated, patient-level split (current split leaks)
+- [ ] Grad-CAM for explainability
+- [ ] EfficientNet / Vision Transformer
+- [ ] k-fold cross-validation
+- [ ] Demo with Gradio or Streamlit
 
- Implement EfficientNet or Vision Transformers
- Add Grad-CAM for explainability
- k-fold cross-validation
- Model deployment with Gradio or Streamlit
- Re-evaluate on a deduplicated, patient-level split (the current Training/Testing split leaks, see Data audit)
+## License
+
+[MIT](LICENSE)
